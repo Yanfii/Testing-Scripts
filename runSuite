@@ -1,0 +1,51 @@
+#!/bin/bash
+if [ $# -ne 2 ]; then
+	echo Must contain only the suite-file and program as arguments. >&2
+	exit 1
+fi
+
+for word in $(cat ${1}); do
+	temp=$(mktemp /tmp/tempfile.XXXXX)
+	arg=${word}.args
+	infile=${word}.in
+	if [ -e $arg ]; then
+		if [ -e $infile ]; then 
+			./${2} $(cat ${word}.args) < $infile > $temp
+		else 
+			./${2} $(cat ${word}.args) > $temp
+		fi
+		
+		if [ -e ${word}.out ] && [ -r ${word}.out ]; then
+			samefile=$(diff $temp ${word}.out | wc -c)
+			if [ $samefile -ne 0 ] && [ -e ${infile} ]; then
+				printf "Test failed: ${word}\nArgs:\n$(cat ${word}.args)\nInput:\n$(cat ${infile})\nExpected:\n$(cat ${word}.out)\nActual:\n$(cat ${temp})\n"
+			elif [ $samefile -ne 0 ]; then
+				printf "Test failed: ${word}\nArgs:\n$(cat ${word}.args)\nInput:\nExpected:\n$(cat ${word}.out)\nActual:\n$(cat ${temp})\n"
+			fi
+		else
+			echo Expected output-file does not exist or is unreadable. >&2
+			exit 1
+		fi 
+	else
+		if [ -e $infile ]; then 
+			./${2} < ${infile} > $temp
+		else 
+			./${2} > $temp
+		fi
+		
+		if [ -e ${word}.out ] && [ -r ${word}.out ]; then
+			samefile=$(diff $temp "${word}.out" | wc -c)
+			if [ $samefile -ne 0 ] && [ -e ${infile} ]; then
+				printf "Test failed: ${word}\nArgs:\nInput:\n$(cat ${infile})\nExpected:\n$(cat ${word}.out)\nActual:\n$(cat ${temp})\n"
+			elif [ $samefile -ne 0 ]; then
+				printf "Test failed: ${word}\nArgs:\nInput:\nExpected:\n$(cat ${word}.out)\nActual:\n$(cat ${temp})\n"
+			fi
+		else
+			echo Expected output-file does not exist or is unreadable. >&2
+			exit 1
+		fi 
+	fi
+	rm $temp
+done
+
+

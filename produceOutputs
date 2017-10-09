@@ -1,0 +1,25 @@
+#!/bin/bash
+if [ $# -ne 2 ]; then
+	echo Must contain only the suite-file and program as arguments. >&2
+	exit 1
+fi
+
+for word in $(cat ${1}); do
+	args=${word}.args
+	infile=${word}.in
+	if [ -e ${infile} ]; then
+		if [ -e ${args} ]; then	
+			./${2} $(cat ${word}.args) < ${infile} > ${word}.out
+		else
+			./${2} < ${infile} > ${word}.out
+		fi
+	else 
+		if [ -e ${args} ]; then	
+			./${2} $(cat ${word}.args) > ${word}.out
+		else
+			./${2} > ${word}.out
+		fi
+	fi	
+done
+
+
